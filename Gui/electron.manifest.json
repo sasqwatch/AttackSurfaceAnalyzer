@@ -1,3 +1,5 @@
 {
-  "executable": "AttackSurfaceAnalyzer-GUI"
+  "executable": "AttackSurfaceAnalyzer-GUI",
+  "loadingUrl": "https://google.com",
+  "icon":""
 }
