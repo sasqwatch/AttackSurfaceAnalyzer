@@ -69,13 +69,15 @@ namespace AttackSurfaceAnalyzer.Gui
             browserWindowOptions.Height = 1000;
             browserWindowOptions.Resizable = true;
             browserWindowOptions.Center = true;
-            browserWindowOptions.Title = "Attack Surface Analyzer Preview";
-            //#if DEBUG
+            browserWindowOptions.Title = "Attack Surface Analyzer v2.0";
+#if DEBUG
             browserWindowOptions.AutoHideMenuBar = false;
-            //#else
-            //browserWindowOptions.AutoHideMenuBar = true;
-            //#endif
-
+#else
+            browserWindowOptions.AutoHideMenuBar = true;
+#endif
+            browserWindowOptions.WebPreferences = new WebPreferences();
+            browserWindowOptions.WebPreferences.NodeIntegration = false;
+            browserWindowOptions.WebPreferences.ContextIsolation = true;
             Task.Run(async () =>
             {
                 await Electron.WindowManager.CreateWindowAsync(browserWindowOptions);

@@ -238,15 +238,6 @@ namespace AttackSurfaceAnalyzer
 
             Strings.Setup();
 
-            if (DatabaseManager.IsFirstRun())
-            {
-                _isFirstRun = true;
-                string exeStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "AttackSurfaceAnalyzerCli.exe config --telemetry-opt-out true" : "AttackSurfaceAnalyzerCli config --telemetry-opt-out true";
-                Log.Information(Strings.Get("ApplicationHasTelemetry"));
-                Log.Information(Strings.Get("ApplicationHasTelemetry2"), "https://github.com/Microsoft/AttackSurfaceAnalyzer/blob/master/PRIVACY.md");
-                Log.Information(Strings.Get("ApplicationHasTelemetry3"), exeStr);
-            }
-
             var argsResult = Parser.Default.ParseArguments<CollectCommandOptions, CompareCommandOptions, MonitorCommandOptions, ExportMonitorCommandOptions, ExportCollectCommandOptions, ConfigCommandOptions>(args)
                 .MapResult(
                     (CollectCommandOptions opts) => RunCollectCommand(opts),
@@ -265,6 +256,7 @@ namespace AttackSurfaceAnalyzer
         {
             DatabaseManager.SqliteFilename = opts.DatabaseFilename;
             DatabaseManager.Setup();
+            CheckFirstRun();
             Telemetry.Setup(Gui: false);
 
             if (opts.ResetDatabase)
@@ -297,7 +289,7 @@ namespace AttackSurfaceAnalyzer
                         List<string> CollectRuns = GetRuns("collect");
                         if(CollectRuns.Count > 0)
                         {
-                            Log.Information(Strings.Get("Begin") + " {0}", Strings.Get("EnumeratingCollectRunIds"));
+                            Log.Information(Strings.Get("Begin"), Strings.Get("EnumeratingCollectRunIds"));
                             foreach (string run in CollectRuns)
                             {
                                 using (var cmd = new SqliteCommand(SQL_GET_RESULT_TYPES_SINGLE, DatabaseManager.Connection, DatabaseManager.Transaction))
@@ -355,7 +347,7 @@ namespace AttackSurfaceAnalyzer
                         List<string> MonitorRuns = GetRuns("monitor");
                         if (MonitorRuns.Count > 0)
                         {
-                            Log.Information(Strings.Get("Begin") + " {0}", Strings.Get("EnumeratingMonitorRunIds"));
+                            Log.Information(Strings.Get("Begin"), Strings.Get("EnumeratingMonitorRunIds"));
 
                             foreach (string monitorRun in MonitorRuns)
                             {
@@ -433,9 +425,9 @@ namespace AttackSurfaceAnalyzer
             Logger.Setup(opts.Debug, opts.Verbose);
 #endif
 
-            Log.Debug("{0} RunExportCollectCommand", Strings.Get("Begin"));
             DatabaseManager.SqliteFilename = opts.DatabaseFilename;
             DatabaseManager.Setup();
+            CheckFirstRun();
             Telemetry.Setup(Gui: false);
             DatabaseManager.VerifySchemaVersion();
 
@@ -518,7 +510,6 @@ namespace AttackSurfaceAnalyzer
             string GET_COMPARISON_RESULTS = "select * from compared where base_run_id=@base_run_id and compare_run_id=@compare_run_id and data_type=@data_type order by base_row_key;";
             string GET_SERIALIZED_RESULTS = "select serialized from @table_name where row_key = @row_key and run_id = @run_id";
 
-            Log.Debug("{0} WriteScanJson", Strings.Get("Begin"));
             Log.Information("Write scan json");
 
             List<RESULT_TYPE> ToExport = new List<RESULT_TYPE> { (RESULT_TYPE)ResultType };
@@ -676,6 +667,18 @@ namespace AttackSurfaceAnalyzer
 
         }
 
+        private static void CheckFirstRun()
+        {
+            if (DatabaseManager.IsFirstRun())
+            {
+                _isFirstRun = true;
+                string exeStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "AttackSurfaceAnalyzerCli.exe config --telemetry-opt-out true" : "AttackSurfaceAnalyzerCli config --telemetry-opt-out true";
+                Log.Information(Strings.Get("ApplicationHasTelemetry"));
+                Log.Information(Strings.Get("ApplicationHasTelemetry2"), "https://github.com/Microsoft/AttackSurfaceAnalyzer/blob/master/PRIVACY.md");
+                Log.Information(Strings.Get("ApplicationHasTelemetry3"), exeStr);
+            }
+        }
+
         private static int RunExportMonitorCommand(ExportMonitorCommandOptions opts)
         {
 #if DEBUG
@@ -685,12 +688,12 @@ namespace AttackSurfaceAnalyzer
 #endif
             DatabaseManager.SqliteFilename = opts.DatabaseFilename;
             DatabaseManager.Setup();
+            CheckFirstRun();
             Telemetry.Setup(Gui: false);
             DatabaseManager.VerifySchemaVersion();
 
             if (opts.RunId.Equals("Timestamp"))
             {
-
                 List<string> runIds = DatabaseManager.GetLatestRunIds(1, "monitor");
 
                 if (runIds.Count < 1)
@@ -768,6 +771,7 @@ namespace AttackSurfaceAnalyzer
 #endif
             DatabaseManager.SqliteFilename = opts.DatabaseFilename;
             DatabaseManager.Setup();
+            CheckFirstRun();
             Telemetry.Setup(Gui: false);
             DatabaseManager.VerifySchemaVersion();
 
@@ -910,7 +914,7 @@ namespace AttackSurfaceAnalyzer
             foreach (FileSystemMonitor c in monitors)
             {
 
-                Log.Information(Strings.Get("Begin")+" : {0}", c.GetType().Name);
+                Log.Information(Strings.Get("Begin"), c.GetType().Name);
 
                 try
                 {
@@ -1112,7 +1116,7 @@ namespace AttackSurfaceAnalyzer
 
             foreach ( BaseCompare c in comparators)
             {
-                Log.Information(Strings.Get("Begin") + " : {0}", c.GetType().Name);
+                Log.Information(Strings.Get("Begin"), c.GetType().Name);
                 if (!c.TryCompare(opts.FirstRunId, opts.SecondRunId))
                 {
                     Log.Warning(Strings.Get("Err_Comparing") + " : {0}", c.GetType().Name);
@@ -1241,6 +1245,7 @@ namespace AttackSurfaceAnalyzer
             AdminOrQuit();
             DatabaseManager.SqliteFilename = opts.DatabaseFilename;
             DatabaseManager.Setup();
+            CheckFirstRun();
             Telemetry.Setup(Gui: false);
             DatabaseManager.VerifySchemaVersion();
 
@@ -1329,7 +1334,7 @@ namespace AttackSurfaceAnalyzer
                 }
             }
 
-            Log.Information("{0} {1}", Strings.Get("Begin"), opts.RunId);
+            Log.Information(Strings.Get("Begin"), opts.RunId);
 
             string INSERT_RUN = "insert into runs (run_id, file_system, ports, users, services, registry, certificates, type, timestamp, version) values (@run_id, @file_system, @ports, @users, @services, @registry, @certificates, @type, @timestamp, @version)";
 
@@ -1390,7 +1395,7 @@ namespace AttackSurfaceAnalyzer
                     Telemetry.TrackTrace(Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error, e);
                 }
             }
-            Log.Information("{0} {1} {2}", Strings.Get("Starting"), collectors.Count.ToString(), Strings.Get("Collectors"));
+            Log.Information(Strings.Get("StartingN"), collectors.Count.ToString() , Strings.Get("Collectors"));
 
             Dictionary<string, string> EndEvent = new Dictionary<string, string>();
             foreach (BaseCollector c in collectors)
@@ -1461,6 +1466,7 @@ namespace AttackSurfaceAnalyzer
 #endif
             DatabaseManager.SqliteFilename = opts.DatabaseFilename;
             DatabaseManager.Setup();
+            CheckFirstRun();
             Telemetry.Setup(Gui: false);
             DatabaseManager.VerifySchemaVersion();
 
